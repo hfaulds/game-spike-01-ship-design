@@ -11,6 +11,8 @@ pub enum PlayerAction {
     RotateLeft,
     RotateRight,
     Fire,
+
+    ToggleBuild,
 }
 
 #[derive(Component)]
@@ -40,9 +42,10 @@ impl Plugin for PlayerShipPlugin {
         app.add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_ship))
             .add_system_set(
                 SystemSet::on_update(AppState::Game)
+                    .with_system(build_toggle_system)
                     .with_system(ship_input_system)
                     .with_system(ship_dampening_system)
-                    .with_system(ship_timers_system)
+                    .with_system(ship_timers_system),
             );
     }
 }
@@ -61,6 +64,7 @@ fn spawn_ship(mut commands: Commands, handles: Res<SpriteAssets>) {
         (KeyCode::D, PlayerAction::RotateRight),
         (KeyCode::Right, PlayerAction::RotateRight),
         (KeyCode::Space, PlayerAction::Fire),
+        (KeyCode::F, PlayerAction::ToggleBuild),
     ]);
     input_map.insert(GamepadButtonType::South, PlayerAction::Fire);
     input_map.insert(
@@ -122,8 +126,24 @@ fn ship_dampening_system(time: Res<Time>, mut query: Query<&mut Velocity, With<S
     }
 }
 
+fn build_toggle_system(
+    mut playerstate: ResMut<State<PlayerState>>,
+    query: Query<&ActionState<PlayerAction>>,
+) {
+    for action_state in query.iter() {
+        if action_state.just_pressed(PlayerAction::ToggleBuild) {
+            let newstate = match playerstate.current() {
+                PlayerState::Building => PlayerState::Flying,
+                PlayerState::Flying => PlayerState::Building,
+            };
+            playerstate.set(newstate).unwrap();
+        }
+    }
+}
+
 fn ship_input_system(
     gamestate: Res<State<AppGameState>>,
+    playerstate: ResMut<State<PlayerState>>,
     mut laser_spawn_events: EventWriter<LaserSpawnEvent>,
     mut query: Query<(
         &ActionState<PlayerAction>,
@@ -133,7 +153,7 @@ fn ship_input_system(
         &mut Ship,
     )>,
 ) {
-    if gamestate.current() == &AppGameState::Game {
+    if gamestate.current() == &AppGameState::Game && playerstate.current() == &PlayerState::Flying {
         for (action_state, mut impulse, mut velocity, transform, mut ship) in query.iter_mut() {
             let thrust = if action_state.pressed(PlayerAction::Forward) {
                 1.0

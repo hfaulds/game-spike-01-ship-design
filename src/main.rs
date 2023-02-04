@@ -2,6 +2,7 @@
 mod arena;
 mod assets;
 mod background;
+mod build;
 mod hud;
 mod laser;
 mod menu;
@@ -13,6 +14,7 @@ mod prelude {
     pub use crate::arena::*;
     pub use crate::assets::*;
     pub use crate::background::*;
+    pub use crate::build::*;
     pub use crate::hud::*;
     pub use crate::laser::*;
     pub use crate::menu::*;
@@ -55,6 +57,7 @@ fn main() {
 
     app.add_plugin(AssetsPlugin)
         .add_plugin(ArenaPlugin)
+        .add_plugin(BuildPlugin)
         .add_plugin(PlayerShipPlugin)
         .add_plugin(LaserPlugin)
         .add_plugin(HudPlugin)
@@ -63,7 +66,9 @@ fn main() {
         .add_plugin(BackgroundPlugin);
 
     app.add_state(AppState::StartMenu)
-        .add_state(AppGameState::Invalid);
+        .add_state(AppGameState::Invalid)
+        .add_state(PlayerState::Flying)
+        .add_state(BuildState::None);
 
     app.add_startup_system(setup_camera);
     app.run();

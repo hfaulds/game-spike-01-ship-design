@@ -25,6 +25,18 @@ pub enum AppGameState {
     GameOver,
 }
 
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub enum PlayerState {
+    Flying,
+    Building,
+}
+
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub enum BuildState {
+    None,
+    WallPlace,
+}
+
 pub struct StatesPlugin;
 
 impl Plugin for StatesPlugin {

@@ -15,7 +15,9 @@ impl Plugin for HudPlugin {
                 .with_system(hud_score_system)
                 .with_system(hud_life_system),
         )
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(hud_spawn));
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(hud_spawn))
+        .add_system_set(SystemSet::on_enter(PlayerState::Building).with_system(build_hud_spawn))
+        .add_system_set(SystemSet::on_exit(PlayerState::Building).with_system(build_hud_despawn));
     }
 }
 
@@ -120,5 +122,94 @@ fn hud_life_system(ship_query: Query<&Ship>, mut uilife_query: Query<(&mut Visib
     }
     for (mut visibility, uilife) in uilife_query.iter_mut() {
         visibility.is_visible = life >= uilife.min;
+    }
+}
+
+fn build_hud_spawn(mut commands: Commands, assets: ResMut<UiAssets>) {
+    commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    align_items: AlignItems::FlexEnd,
+                    justify_content: JustifyContent::FlexEnd,
+                    flex_direction: FlexDirection::Row,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ForState {
+                states: vec![AppState::Game],
+            },
+            ForState {
+                states: vec![PlayerState::Building],
+            },
+        ))
+        .with_children(|parent| {
+            parent
+                .spawn(NodeBundle {
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        size: Size::new(Val::Percent(100.0), Val::Px(100.0)),
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        flex_direction: FlexDirection::Row,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn(TextBundle {
+                        style: Style {
+                            justify_content: JustifyContent::FlexEnd,
+                            margin: UiRect {
+                                left: Val::Px(10.0),
+                                right: Val::Px(10.0),
+                                top: Val::Px(10.0),
+                                bottom: Val::Px(10.0),
+                            },
+                            ..Default::default()
+                        },
+                        text: Text::from_section(
+                            "A",
+                            TextStyle {
+                                font: assets.font.clone(),
+                                font_size: 50.0,
+                                color: Color::rgb_u8(0x00, 0xAA, 0xAA),
+                            },
+                        ),
+                        ..Default::default()
+                    });
+                    parent.spawn(TextBundle {
+                        style: Style {
+                            justify_content: JustifyContent::FlexEnd,
+                            margin: UiRect {
+                                left: Val::Px(10.0),
+                                right: Val::Px(10.0),
+                                top: Val::Px(10.0),
+                                bottom: Val::Px(10.0),
+                            },
+                            ..Default::default()
+                        },
+                        text: Text::from_section(
+                            "B",
+                            TextStyle {
+                                font: assets.font.clone(),
+                                font_size: 50.0,
+                                color: Color::rgb_u8(0x00, 0xAA, 0xAA),
+                            },
+                        ),
+                        ..Default::default()
+                    });
+                });
+        });
+}
+
+fn build_hud_despawn(mut commands: Commands, query: Query<(Entity, &ForState<PlayerState>)>) {
+    for (entity, for_state) in &mut query.iter() {
+        if for_state.states.contains(&PlayerState::Building) {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
