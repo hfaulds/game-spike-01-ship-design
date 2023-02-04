@@ -9,14 +9,12 @@ pub struct SpriteAssets {
     pub player_ship: Handle<Image>,
     pub ship_explosion: Handle<Image>,
     pub ship_contact: Handle<Image>,
-    pub asteroid_explosion: Handle<Image>,
 }
 #[derive(Debug, Resource)]
 pub struct AudioAssets {
     pub laser_trigger: Handle<AudioSource>,
     pub ship_explosion: Handle<AudioSource>,
     pub ship_contact: Handle<AudioSource>,
-    pub asteroid_explosion: Handle<AudioSource>,
 }
 
 #[derive(Debug, Resource)]
@@ -42,13 +40,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         player_ship: asset_server.load("playerShip2_red.png"),
         ship_explosion: asset_server.load("explosion01.png"),
         ship_contact: asset_server.load("explosion01.png"),
-        asteroid_explosion: asset_server.load("flash00.png"),
     });
     commands.insert_resource(AudioAssets {
         laser_trigger: asset_server.load("sfx_laser1.ogg"),
         ship_explosion: asset_server.load("Explosion_ship.ogg"),
         ship_contact: asset_server.load("Explosion.ogg"),
-        asteroid_explosion: asset_server.load("Explosion.ogg"),
     });
     commands.insert_resource(UiAssets {
         font: asset_server.load("kenvector_future.ttf"),

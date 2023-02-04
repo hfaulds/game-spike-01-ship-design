@@ -1,10 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 mod arena;
 mod assets;
-mod asteroid;
 mod background;
-mod contact;
-mod explosion;
 mod hud;
 mod laser;
 mod menu;
@@ -15,10 +12,7 @@ mod state;
 mod prelude {
     pub use crate::arena::*;
     pub use crate::assets::*;
-    pub use crate::asteroid::*;
     pub use crate::background::*;
-    pub use crate::contact::*;
-    pub use crate::explosion::*;
     pub use crate::hud::*;
     pub use crate::laser::*;
     pub use crate::menu::*;
@@ -63,12 +57,9 @@ fn main() {
         .add_plugin(ArenaPlugin)
         .add_plugin(PlayerShipPlugin)
         .add_plugin(LaserPlugin)
-        .add_plugin(AsteroidPlugin)
         .add_plugin(HudPlugin)
         .add_plugin(MenuPlugin)
         .add_plugin(StatesPlugin)
-        .add_plugin(ContactPlugin)
-        .add_plugin(ExplosionPlugin)
         .add_plugin(BackgroundPlugin);
 
     app.add_state(AppState::StartMenu)
