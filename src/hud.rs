@@ -172,7 +172,7 @@ fn build_hud_spawn(mut commands: Commands, assets: ResMut<UiAssets>) {
                             ..Default::default()
                         },
                         text: Text::from_section(
-                            "A",
+                            "1",
                             TextStyle {
                                 font: assets.font.clone(),
                                 font_size: 50.0,
@@ -193,7 +193,7 @@ fn build_hud_spawn(mut commands: Commands, assets: ResMut<UiAssets>) {
                             ..Default::default()
                         },
                         text: Text::from_section(
-                            "B",
+                            "2",
                             TextStyle {
                                 font: assets.font.clone(),
                                 font_size: 50.0,
