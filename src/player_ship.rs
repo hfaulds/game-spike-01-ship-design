@@ -54,7 +54,7 @@ impl Plugin for PlayerShipPlugin {
 #[derive(Component)]
 pub struct ExhaustEffect;
 
-fn spawn_ship(mut commands: Commands, handles: Res<SpriteAssets>) {
+fn spawn_ship(mut commands: Commands) {
     // For player actions, allow keyboard WASD/ Arrows/ Gamepag to control the ship
     let mut input_map = InputMap::new([
         (KeyCode::W, PlayerAction::Forward),
@@ -83,19 +83,16 @@ fn spawn_ship(mut commands: Commands, handles: Res<SpriteAssets>) {
         SingleAxis::negative_only(GamepadAxisType::LeftStickX, -0.4),
         PlayerAction::RotateLeft,
     );
+
+    let mut path_builder = PathBuilder::new();
+    path_builder.move_to(Vec2::new(-5.0, -5.0));
+    path_builder.line_to(Vec2::new(-5.0, 5.0));
+    path_builder.line_to(Vec2::new(5.0, 5.0));
+    path_builder.line_to(Vec2::new(5.0, -5.0));
+    path_builder.line_to(Vec2::new(-5.0, -5.0));
+
+    let line = path_builder.build();
     commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(30., 20.)),
-                ..Default::default()
-            },
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, 1.0),
-                ..Default::default()
-            },
-            texture: handles.player_ship.clone(),
-            ..Default::default()
-        },
         Ship {
             rotation_speed: 3.0,
             thrust: 60.0,
@@ -103,6 +100,11 @@ fn spawn_ship(mut commands: Commands, handles: Res<SpriteAssets>) {
             cannon_timer: Timer::from_seconds(0.2, TimerMode::Once),
             player_id: 1,
         },
+        GeometryBuilder::build_as(
+            &line,
+            DrawMode::Stroke(StrokeMode::new(Color::WHITE, 5.0)),
+            Transform::default(),
+        ),
         ForState {
             states: vec![AppState::Game],
         },

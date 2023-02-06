@@ -39,3 +39,10 @@ pub fn get_cursor_position(
     let distance = ray.intersect_plane(Vec3::Z, Vec3::Z).unwrap();
     ray.get_point(distance).truncate()
 }
+
+pub fn round_to_grid(pos: Vec2, grid_size: f32) -> Vec2 {
+    Vec2::new(
+        (pos.x / grid_size).round() * grid_size,
+        (pos.y / grid_size).round() * grid_size,
+    )
+}

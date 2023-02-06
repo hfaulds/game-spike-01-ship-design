@@ -49,14 +49,14 @@ fn tool_select_system(
 }
 
 fn wall_place_system(
-    mut commands: Commands,
     windows: Res<Windows>,
     camera: Query<(&Camera, &GlobalTransform)>,
     mut wall_tool: ResMut<WallTool>,
     buttons: Res<Input<MouseButton>>,
+    mut ship_paths: Query<&mut Path, With<Ship>>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
-        let pos = get_cursor_position(windows, camera);
+        let pos = round_to_grid(get_cursor_position(windows, camera), 20.0);
         match wall_tool.start {
             None => {
                 wall_tool.start = Some(pos);
@@ -66,12 +66,10 @@ fn wall_place_system(
                 path_builder.move_to(start);
                 path_builder.line_to(pos);
                 let line = path_builder.build();
-                commands.spawn(GeometryBuilder::build_as(
-                    &line,
-                    DrawMode::Stroke(StrokeMode::new(Color::WHITE, 10.0)),
-                    Transform::default(),
-                ));
 
+                let path_builder = { ShapePath::new().add(ship_paths.single()).add(&line) };
+                let mut ship_path = ship_paths.single_mut();
+                *ship_path = path_builder.build();
                 wall_tool.start = None;
             }
         }

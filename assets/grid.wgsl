@@ -21,15 +21,14 @@ struct Vertex {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(1) uv: vec2<f32>,
+    @location(0) world_position: vec4<f32>,
 };
 
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
-    let world_position = mesh.model * vec4<f32>(vertex.position, 1.0);
-
     var out: VertexOutput;
-    out.clip_position = view.view_proj * world_position;
+    out.world_position = mesh.model * vec4<f32>(vertex.position, 1.0);;
+    out.clip_position = view.view_proj * out.world_position;
     return out;
 }
 
@@ -37,7 +36,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let col = vec3<f32>(1.0);
 
-    let pos = vec2<f32>(in.clip_position.x, in.clip_position.y);
+    let pos = vec2<f32>(in.world_position.x, in.world_position.y);
     let alph = max(
           grid(pos, 20.0, 0.5),
           grid(pos, 100.0, 1.0)
