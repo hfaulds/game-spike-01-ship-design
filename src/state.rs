@@ -34,7 +34,7 @@ pub enum PlayerState {
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum BuildState {
     None,
-    WallPlace,
+    WallTool,
 }
 
 pub struct StatesPlugin;
