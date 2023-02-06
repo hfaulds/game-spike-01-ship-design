@@ -8,10 +8,8 @@ pub enum BuildAction {
     SelectWallTool,
 }
 
-#[derive(Resource, Debug, Default)]
-struct WallTool {
-    start: Option<Vec2>,
-}
+#[derive(Component, Debug, Default)]
+struct WallTool {}
 
 impl Plugin for BuildPlugin {
     fn build(&self, app: &mut App) {
@@ -21,7 +19,7 @@ impl Plugin for BuildPlugin {
             SystemSet::on_update(PlayerState::Building).with_system(tool_select_system),
         );
         app.add_system_set(
-            SystemSet::on_update(BuildState::WallTool).with_system(wall_place_system),
+            SystemSet::on_update(BuildState::WallTool).with_system(wall_tool_system),
         );
     }
 }
@@ -32,8 +30,15 @@ fn setup(mut commands: Commands) {
         (KeyCode::Key0, BuildAction::DeselectTool),
     ]);
     commands.insert_resource(input_map);
-    commands.init_resource::<WallTool>();
     commands.insert_resource(ActionState::<BuildAction>::default());
+    commands.spawn((
+        WallTool::default(),
+        GeometryBuilder::build_as(
+            &ShapePath::new().build(),
+            DrawMode::Stroke(StrokeMode::new(Color::BLUE, 5.0)),
+            Transform::default(),
+        ),
+    ));
 }
 
 fn tool_select_system(
@@ -48,30 +53,43 @@ fn tool_select_system(
     }
 }
 
-fn wall_place_system(
+fn wall_tool_system(
     windows: Res<Windows>,
     camera: Query<(&Camera, &GlobalTransform)>,
-    mut wall_tool: ResMut<WallTool>,
+    mut wall_tools: Query<&mut Path, With<WallTool>>,
+    mut ship_paths: Query<&mut Path, (With<Ship>, Without<WallTool>)>,
     buttons: Res<Input<MouseButton>>,
-    mut ship_paths: Query<&mut Path, With<Ship>>,
 ) {
-    if buttons.just_pressed(MouseButton::Left) {
-        let pos = round_to_grid(get_cursor_position(windows, camera), 20.0);
-        match wall_tool.start {
-            None => {
-                wall_tool.start = Some(pos);
-            }
-            Some(start) => {
-                let mut path_builder = PathBuilder::new();
-                path_builder.move_to(start);
-                path_builder.line_to(pos);
-                let line = path_builder.build();
+    let cursor = round_to_grid(get_cursor_position(windows, camera), 20.0);
 
-                let path_builder = { ShapePath::new().add(ship_paths.single()).add(&line) };
-                let mut ship_path = ship_paths.single_mut();
-                *ship_path = path_builder.build();
-                wall_tool.start = None;
-            }
+    if buttons.just_pressed(MouseButton::Left) {
+        let wall_tool_path = wall_tools.single();
+        let new_wall_path = if wall_tool_path.0.first_endpoint().is_none() {
+            let mut path_builder = PathBuilder::new();
+            path_builder.move_to(cursor);
+            path_builder.build()
+        } else {
+            let new_ship_path = ShapePath::new()
+                .add(ship_paths.single())
+                .add(wall_tool_path)
+                .build();
+            let mut ship_path = ship_paths.single_mut();
+            *ship_path = new_ship_path;
+            ShapePath::new().build()
+        };
+        let mut wall_tool_path = wall_tools.single_mut();
+        *wall_tool_path = new_wall_path;
+    }
+
+    if let Ok(mut wall_tool_path) = wall_tools.get_single_mut() {
+        if let Some(point) = wall_tool_path.0.first_endpoint() {
+            let start = Vec2::new(point.0.x, point.0.y);
+
+            let mut path_builder = PathBuilder::new();
+            path_builder.move_to(start);
+            path_builder.line_to(cursor);
+
+            *wall_tool_path = path_builder.build();
         }
     }
 }
