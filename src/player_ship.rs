@@ -91,7 +91,6 @@ fn spawn_ship(mut commands: Commands) {
     path_builder.line_to(Vec2::new(5.0, -5.0));
     path_builder.line_to(Vec2::new(-5.0, -5.0));
 
-    let line = path_builder.build();
     commands.spawn((
         Ship {
             rotation_speed: 3.0,
@@ -101,7 +100,7 @@ fn spawn_ship(mut commands: Commands) {
             player_id: 1,
         },
         GeometryBuilder::build_as(
-            &line,
+            &path_builder.build(),
             DrawMode::Stroke(StrokeMode::new(Color::WHITE, 5.0)),
             Transform::default(),
         ),
