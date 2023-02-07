@@ -29,6 +29,12 @@ pub struct Ship {
     pub player_id: u32,
 }
 
+#[derive(Component)]
+pub struct ShipWalls {}
+
+#[derive(Component)]
+pub struct ShipEngine {}
+
 #[derive(Component, Clone, Copy)]
 pub struct Damage {
     pub value: u32,
@@ -84,39 +90,68 @@ fn spawn_ship(mut commands: Commands) {
         PlayerAction::RotateLeft,
     );
 
-    let mut path_builder = PathBuilder::new();
-    path_builder.move_to(Vec2::new(-5.0, -5.0));
-    path_builder.line_to(Vec2::new(-5.0, 5.0));
-    path_builder.line_to(Vec2::new(5.0, 5.0));
-    path_builder.line_to(Vec2::new(5.0, -5.0));
-    path_builder.line_to(Vec2::new(-5.0, -5.0));
+    commands
+        .spawn((
+            Ship {
+                rotation_speed: 3.0,
+                thrust: 60.0,
+                life: START_LIFE,
+                cannon_timer: Timer::from_seconds(0.2, TimerMode::Once),
+                player_id: 1,
+            },
+            ForState {
+                states: vec![AppState::Game],
+            },
+            RigidBody::Dynamic,
+            Collider::ball(13.5),
+            ExternalImpulse::default(),
+            Velocity::linear(Vec2::ZERO),
+            ActiveEvents::COLLISION_EVENTS,
+            InputManagerBundle::<PlayerAction> {
+                action_state: ActionState::default(),
+                input_map,
+            },
+            GeometryBuilder::build_as(
+                &PathBuilder::new().build(),
+                DrawMode::Stroke(StrokeMode::new(Color::WHITE, 5.0)),
+                Transform::default(),
+            ),
+        ))
+        .with_children(|parent| {
+            let mut walls_path = PathBuilder::new();
+            walls_path.move_to(Vec2::new(-5.0, -5.0));
+            walls_path.line_to(Vec2::new(-5.0, 5.0));
+            walls_path.line_to(Vec2::new(5.0, 5.0));
+            walls_path.line_to(Vec2::new(5.0, -5.0));
+            walls_path.line_to(Vec2::new(-5.0, -5.0));
 
-    commands.spawn((
-        Ship {
-            rotation_speed: 3.0,
-            thrust: 60.0,
-            life: START_LIFE,
-            cannon_timer: Timer::from_seconds(0.2, TimerMode::Once),
-            player_id: 1,
-        },
-        GeometryBuilder::build_as(
-            &path_builder.build(),
-            DrawMode::Stroke(StrokeMode::new(Color::WHITE, 5.0)),
-            Transform::default(),
-        ),
-        ForState {
-            states: vec![AppState::Game],
-        },
-        RigidBody::Dynamic,
-        Collider::ball(13.5),
-        ExternalImpulse::default(),
-        Velocity::linear(Vec2::ZERO),
-        ActiveEvents::COLLISION_EVENTS,
-        InputManagerBundle::<PlayerAction> {
-            action_state: ActionState::default(),
-            input_map,
-        },
-    ));
+            parent.spawn((
+                ShipWalls {},
+                GeometryBuilder::build_as(
+                    &walls_path.build(),
+                    DrawMode::Stroke(StrokeMode::new(Color::WHITE, 5.0)),
+                    Transform::default(),
+                ),
+            ));
+
+            let engines = RegularPolygon {
+                sides: 4,
+                feature: shapes::RegularPolygonFeature::Radius(5.0),
+                ..shapes::RegularPolygon::default()
+            };
+
+            parent.spawn((
+                ShipEngine {},
+                GeometryBuilder::build_as(
+                    &ShapePath::build_as(&engines),
+                    DrawMode::Stroke(StrokeMode::new(Color::RED, 5.0)),
+                    Transform {
+                        translation: Vec3::new(0.0, -5.0, 0.0),
+                        ..Default::default()
+                    },
+                ),
+            ));
+        });
 }
 
 fn ship_dampening_system(time: Res<Time>, mut query: Query<&mut Velocity, With<Ship>>) {

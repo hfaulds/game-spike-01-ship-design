@@ -26,7 +26,7 @@ impl Ray {
 pub fn get_cursor_position(
     windows: Res<Windows>,
     camera: Query<(&Camera, &GlobalTransform)>,
-) -> Option<Vec2> {
+) -> Option<Vec3> {
     let window = windows.get_primary().unwrap();
     let cursor_position = window.cursor_position()?;
     let (camera, camera_transform) = camera.single();
@@ -37,7 +37,7 @@ pub fn get_cursor_position(
     };
 
     let distance = ray.intersect_plane(Vec3::Z, Vec3::Z).unwrap();
-    Some(ray.get_point(distance).truncate())
+    Some(ray.get_point(distance))
 }
 
 pub fn round_to_grid(pos: Vec2, grid_size: f32) -> Vec2 {
@@ -45,4 +45,8 @@ pub fn round_to_grid(pos: Vec2, grid_size: f32) -> Vec2 {
         (pos.x / grid_size).round() * grid_size,
         (pos.y / grid_size).round() * grid_size,
     )
+}
+
+pub fn point_relative_to_transform(point: Vec3, transform: &GlobalTransform) -> Vec3 {
+    return transform.compute_matrix().inverse().transform_point3(point);
 }

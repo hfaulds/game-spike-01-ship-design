@@ -25,13 +25,17 @@ impl Plugin for BuildPlugin {
         app.add_system_set(
             SystemSet::on_update(BuildState::WallTool).with_system(wall_tool_system),
         );
+        app.add_system_set(
+            SystemSet::on_update(BuildState::EngineTool).with_system(engine_tool_system),
+        );
     }
 }
 
 fn setup(mut commands: Commands) {
     let input_map = InputMap::new([
-        (KeyCode::Key1, BuildAction::SelectWallTool),
         (KeyCode::Key0, BuildAction::DeselectTool),
+        (KeyCode::Key1, BuildAction::SelectWallTool),
+        (KeyCode::Key2, BuildAction::SelectEngineTool),
     ]);
     commands.insert_resource(input_map);
     commands.insert_resource(ActionState::<BuildAction>::default());
@@ -69,29 +73,32 @@ fn tool_select_system(
 fn wall_tool_system(
     windows: Res<Windows>,
     camera: Query<(&Camera, &GlobalTransform)>,
+    ship_transforms: Query<&GlobalTransform, With<Ship>>,
     mut wall_tools: Query<&mut Path, With<WallTool>>,
-    mut ship_paths: Query<&mut Path, (With<Ship>, Without<WallTool>)>,
+    mut wall_paths: Query<&mut Path, (With<ShipWalls>, Without<WallTool>)>,
     buttons: Res<Input<MouseButton>>,
 ) {
-    if let Some(cursor) = get_cursor_position(windows, camera) {
-        let cursor = round_to_grid(cursor, 20.0);
+    if let Some(cursor_global) = get_cursor_position(windows, camera) {
+        let ship_transform = ship_transforms.single();
+        let cursor_local = point_relative_to_transform(cursor_global, ship_transform).truncate();
+        let cursor = round_to_grid(cursor_local, 20.0);
         if buttons.just_pressed(MouseButton::Left) {
             let wall_tool_path = wall_tools.single();
-            let new_wall_path = if wall_tool_path.0.first_endpoint().is_none() {
+            let new_wall_tool_path = if wall_tool_path.0.first_endpoint().is_none() {
                 let mut path_builder = PathBuilder::new();
                 path_builder.move_to(cursor);
                 path_builder.build()
             } else {
-                let new_ship_path = ShapePath::new()
-                    .add(ship_paths.single())
+                let new_wall_path = ShapePath::new()
+                    .add(wall_paths.single())
                     .add(wall_tool_path)
                     .build();
-                let mut ship_path = ship_paths.single_mut();
-                *ship_path = new_ship_path;
+                let mut wall_path = wall_paths.single_mut();
+                *wall_path = new_wall_path;
                 ShapePath::new().build()
             };
             let mut wall_tool_path = wall_tools.single_mut();
-            *wall_tool_path = new_wall_path;
+            *wall_tool_path = new_wall_tool_path;
         }
 
         if let Ok(mut wall_tool_path) = wall_tools.get_single_mut() {
@@ -104,6 +111,44 @@ fn wall_tool_system(
 
                 *wall_tool_path = path_builder.build();
             }
+        }
+    }
+}
+
+fn engine_tool_system(
+    windows: Res<Windows>,
+    camera: Query<(&Camera, &GlobalTransform)>,
+    mut commands: Commands,
+    ships: Query<(Entity, &GlobalTransform), With<Ship>>,
+    buttons: Res<Input<MouseButton>>,
+) {
+    if let Some(cursor_global) = get_cursor_position(windows, camera) {
+        let (ship_entity, ship_transform) = ships.single();
+        let cursor_local = point_relative_to_transform(cursor_global, ship_transform).truncate();
+        let cursor = round_to_grid(cursor_local, 20.0);
+        if buttons.just_pressed(MouseButton::Left) {
+            let engines = RegularPolygon {
+                sides: 4,
+                feature: shapes::RegularPolygonFeature::Radius(5.0),
+                ..shapes::RegularPolygon::default()
+            };
+
+            commands
+                .get_entity(ship_entity)
+                .unwrap()
+                .add_children(|parent| {
+                    parent.spawn((
+                        ShipEngine {},
+                        GeometryBuilder::build_as(
+                            &ShapePath::build_as(&engines),
+                            DrawMode::Fill(FillMode::color(Color::RED)),
+                            Transform {
+                                translation: Vec3::new(cursor.x, cursor.y, 0.0),
+                                ..Default::default()
+                            },
+                        ),
+                    ));
+                });
         }
     }
 }
