@@ -6,10 +6,14 @@ pub struct BuildPlugin;
 pub enum BuildAction {
     DeselectTool,
     SelectWallTool,
+    SelectEngineTool,
 }
 
 #[derive(Component, Debug, Default)]
 struct WallTool {}
+
+#[derive(Component, Debug, Default)]
+struct EngineTool {}
 
 impl Plugin for BuildPlugin {
     fn build(&self, app: &mut App) {
@@ -45,11 +49,20 @@ fn tool_select_system(
     mut buildstate: ResMut<State<BuildState>>,
     action_state: Res<ActionState<BuildAction>>,
 ) {
-    if action_state.just_pressed(BuildAction::DeselectTool) {
+    if buildstate.current() != &BuildState::None
+        && action_state.just_pressed(BuildAction::DeselectTool)
+    {
         buildstate.set(BuildState::None).unwrap();
     }
-    if action_state.just_pressed(BuildAction::SelectWallTool) {
+    if buildstate.current() != &BuildState::WallTool
+        && action_state.just_pressed(BuildAction::SelectWallTool)
+    {
         buildstate.set(BuildState::WallTool).unwrap();
+    }
+    if buildstate.current() != &BuildState::EngineTool
+        && action_state.just_pressed(BuildAction::SelectEngineTool)
+    {
+        buildstate.set(BuildState::EngineTool).unwrap();
     }
 }
 

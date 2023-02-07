@@ -35,6 +35,7 @@ pub enum PlayerState {
 pub enum BuildState {
     None,
     WallTool,
+    EngineTool,
 }
 
 pub struct StatesPlugin;
